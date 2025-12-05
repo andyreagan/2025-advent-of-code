@@ -380,10 +380,10 @@ fn day04(day: i32) {
 
 fn day05(day: i32) {
     println!("---------  day {}  ----------", day);
-    // let input = String::from("3-5\n10-14\n16-20\n12-18\n\n1\n5\n8\n11\n17\n32");
-    let file = File::open(format!("inputs/day{:02}.txt", day));
-    let mut input = String::new();
-    let _ = file.expect(&format!("file inputs/day{:02}.txt does not exist", day)).read_to_string(&mut input); 
+    let input = String::from("3-5\n10-14\n16-20\n12-18\n\n1\n5\n8\n11\n17\n32");
+    // let file = File::open(format!("inputs/day{:02}.txt", day));
+    // let mut input = String::new();
+    // let _ = file.expect(&format!("file inputs/day{:02}.txt does not exist", day)).read_to_string(&mut input); 
     let split: Vec<&str> = input.split("\n\n").collect();
     assert_eq!(split.len(), 2);
     let fresh_ranges: Vec<Vec<i128>> = split[0].lines()
