@@ -405,8 +405,8 @@ fn day05(day: i32) {
     // for the test data:
     println!("we have {} id ranges", fresh_ranges.len());
     println!("we have {} ids", food_ids.len());
-    // assert_eq!(fresh_ranges.len(), 4);
-    // assert_eq!(food_ids.len(), 6);
+    assert_eq!(fresh_ranges.len(), 4);
+    assert_eq!(food_ids.len(), 6);
 
     let mut fresh_ingredients: i128 = 0;
     for food_id in food_ids.into_iter() {
@@ -421,7 +421,7 @@ fn day05(day: i32) {
             // }
         }
     }
-    // assert_eq!(fresh_ingredients, 3);
+    assert_eq!(fresh_ingredients, 3);
     println!("fresh = {fresh_ingredients}");
     // part 2
     let mut starting_ranges = fresh_ranges.clone();
@@ -458,16 +458,138 @@ fn day05(day: i32) {
         println!("finished with {} ranges", new_ranges.len());
     }
     let new_ranges_total: i128 = new_ranges.iter().map(|x| x[1]-x[0]+1).sum();
-    // assert_eq!(new_ranges_total, 14);
+    assert_eq!(new_ranges_total, 14);
     println!("total valid ids are {new_ranges_total}");
     println!("------- end of day {} -------\n", day);
 }
 
+
+fn day06(day: i32) {
+    println!("---------  day {}  ----------", day);
+    let input = String::from("123 328  51 64 
+ 45 64  387 23 
+  6 98  215 314
+*   +   *   +  ");
+    // let file = File::open(format!("inputs/day{:02}.txt", day));
+    // let mut input = String::new();
+    // let _ = file.expect(&format!("file inputs/day{:02}.txt does not exist", day)).read_to_string(&mut input);
+    
+    let mut inputs: Vec<&str> = input.lines().collect();
+    let signs: &str = inputs.pop().expect("have a final line");
+    let signs_parsed: Vec<&str> = signs.split_whitespace().collect();
+    println!("we have {} number to combine in each problem", inputs.len());
+    println!(
+        "we have {} multiplications and {} adds",
+        signs_parsed.iter().filter(|x| **x == "*").collect::<Vec<&&str>>().len(),
+        signs_parsed.iter().filter(|x| **x == "+").collect::<Vec<&&str>>().len()
+    );
+    // for line in inputs.iter() {
+    //     println!("{line}");
+    // }
+    let inputs_parsed: Vec<Vec<i128>> = inputs.iter()
+        .map(|x| {
+            x.split_whitespace()
+                .map(|n| {
+                    n.parse()
+                        .expect("should be int")
+                }).collect()
+        }).collect();
+    println!("parsed input matrix is size {}x{}", inputs_parsed.len(), inputs_parsed[0].len());
+    let mut pivoted: Vec<Vec<i128>> = Vec::new();
+    for i in 0..inputs_parsed[0].len() {
+        let mut tmp_vec: Vec<i128> = Vec::new();
+        for j in 0..inputs_parsed.len() {
+            tmp_vec.push(inputs_parsed[j][i]);
+        }
+        pivoted.push(tmp_vec);
+    }
+    println!("pivoted input matrix is size {}x{}", pivoted.len(), pivoted[0].len());
+    let mut total: i128 = 0;
+    for i in 0..pivoted.len() {
+        let tmp_op: i128 = match signs_parsed[i] {
+            "*" => pivoted[i].iter().product(),
+            "+" => pivoted[i].iter().sum(),
+            _ => panic!(),
+        };
+        total += tmp_op;
+    }
+    // assert_eq!(total, 4277556);
+    println!("total is {total}");
+    // part 2 - need to parse differently
+    let mut widths: Vec<usize> = Vec::new();
+    let mut counter: usize = 0;
+    for i in 1..signs.len() {
+        match signs.chars().nth(i).expect("have a char") {
+            ' ' => counter += 1,
+            _ => {
+                widths.push(counter);
+                counter = 0;
+            },
+        }
+        // println!("counter {counter}");
+    }
+    widths.push(counter+1);
+    // assert_eq!(widths[0], 3);
+    // assert_eq!(widths[3], 3);
+
+    let mut inputs_parsed_2: Vec<Vec<&str>> = Vec::new();
+    for line in inputs {
+        // println!("parsing line={line}");
+        let mut tmp_vec: Vec<&str> = Vec::new();
+        let mut total_width: usize = 0;
+        for width in widths.iter() {
+            // println!("pulling from {total_width}..{}", total_width+width);
+            tmp_vec.push(&line[total_width..total_width+width]);
+            total_width += width + 1;
+        }
+        inputs_parsed_2.push(tmp_vec);
+    }
+    println!("parsed input matrix is size {}x{}", inputs_parsed_2.len(), inputs_parsed_2[0].len());
+    // assert_eq!(inputs_parsed_2[0][0], "123");
+    // assert_eq!(inputs_parsed_2[1][0], " 45");
+    // assert_eq!(inputs_parsed_2[2][0], "  6");
+    // assert_eq!(inputs_parsed_2[1][1], "64 ");
+    // assert_eq!(inputs_parsed_2[2][3], "314");
+    let mut pivoted_2: Vec<Vec<&str>> = Vec::new();
+    for i in 0..inputs_parsed_2[0].len() {
+        let mut tmp_vec: Vec<&str> = Vec::new();
+        for j in 0..inputs_parsed_2.len() {
+            tmp_vec.push(inputs_parsed_2[j][i]);
+        }
+        pivoted_2.push(tmp_vec);
+    }
+    println!("pivoted 2 input matrix is size {}x{}", pivoted_2.len(), pivoted_2[0].len());
+    let mut inputs_parsed_3: Vec<Vec<i128>> = Vec::new();
+    for i in 0..pivoted_2.len() {
+        let width = widths[i];
+        let mut tmp_vec: Vec<i128> = Vec::new();
+        for j in 0..width {
+            let collected_chars = pivoted_2[i].iter().map(|x| x.chars().nth(j).expect("have a char")).collect::<String>();
+            // println!("parsing {collected_chars} into an int");
+            tmp_vec.push(collected_chars.trim().parse().unwrap());
+        }
+        inputs_parsed_3.push(tmp_vec);
+    }
+    println!("parsed input matrix is size {}x{}", inputs_parsed_3.len(), inputs_parsed_3[0].len());
+    let mut total_2: i128 = 0;
+    for i in 0..inputs_parsed_3.len() {
+        let tmp_op: i128 = match signs_parsed[i] {
+            "*" => inputs_parsed_3[i].iter().product(),
+            "+" => inputs_parsed_3[i].iter().sum(),
+            _ => panic!(),
+        };
+        total_2 += tmp_op;
+    }
+    // assert_eq!(total_2, 3263827);
+    println!("total is {total_2}");    
+    println!("------- end of day {} -------\n", day);
+}
 
 fn main() {
     day01();
     day02();
     day03(3);
     day04(4);
-    day05(5);    
+    day05(5);
+    day06(6);        
 }
