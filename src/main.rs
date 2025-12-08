@@ -1,5 +1,5 @@
-use std::fs::File;
-use std::io::prelude::*;
+// use std::fs::File;
+// use std::io::prelude::*;
 use std::cmp::min;
 use std::cmp::max;
 // use num_bigint::BigUint;
@@ -473,14 +473,148 @@ mod tests_day06 {
     }
 }
 
-mod day07;
+
+fn distance(p1: &Vec<i32>, p2: &Vec<i32>) -> f64 {
+    let dx = (p1[0] - p2[0]).abs() as f64;
+    let dy = (p1[1] - p2[1]).abs() as f64;
+    let dz = (p1[2] - p2[2]).abs() as f64;
+    (dx*dx + dy*dy + dz*dz).sqrt()
+}
+
+fn day08(day: i32) {
+    println!("---------  day {}  ----------", day);
+    let connections_to_make: usize = 10;
+    let input = String::from("162,817,812
+57,618,57
+906,360,560
+592,479,940
+352,342,300
+466,668,158
+542,29,236
+431,825,988
+739,650,466
+52,470,668
+216,146,977
+819,987,18
+117,168,530
+805,96,715
+346,949,466
+970,615,88
+941,993,340
+862,61,35
+984,92,344
+425,690,689");
+    // let file = File::open(format!("inputs/day{:02}.txt", day));
+    // let mut input = String::new();
+    // let _ = file.expect(&format!("file inputs/day{:02}.txt does not exist", day)).read_to_string(&mut input);
+    let lines: Vec<&str> = input.lines().collect();
+    println!("we have {} boxes to check", lines.len());
+    let points: Vec<Vec<i32>> = lines.iter()
+        .map(|x| {
+            x.split(",")
+                .map(|n| n.parse::<i32>().expect("should parse to int"))
+                .collect()
+        })
+        .collect();
+    println!("compute the full pairwise distance matrix");
+    // let mut distances: Vec<Vec<f64>> = vec![vec![0.0; points.len()]; points.len()];
+    // let mut connections: Vec<Vec<i32>> = vec![vec![0; points.len()]; points.len()];
+    // this is a more sortable format for the matrix (a sparse representation)
+    let mut all_distances: Vec<(usize, usize, f64)> = Vec::new();
+    for i in 0..points.len() {
+        // only need to compute half the matrix
+        // (and not the diagonal)
+        for j in i+1..points.len() {
+            let distance = distance(&points[i], &points[j]);
+            // distances[i][j] = distance;
+            all_distances.push((i, j, distance));
+        }
+    }
+    println!("sort all of the distances");
+    println!("the first row of our distance list is like: {:?}", all_distances[0]);
+    all_distances.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
+    println!("the first row of our sorted distance list is like: {:?}", all_distances[0]);
+    // println!("this means the shortest distance is between box {:?} and box {:?}, with distance {}", points[all_distances[0].0], points[all_distances[0].1], all_distances[0].2);
+    // println!("second is between box {:?} and box {:?}, with distance {}", points[all_distances[1].0], points[all_distances[1].1], all_distances[1].2);
+    // now let's build up the connected components list
+    let mut components: Vec<Vec<usize>> = Vec::new(); // vec![0..points.len()]
+    // initialize every one as separate
+    for i in 0..points.len() {
+        components.push(vec![i]);
+    }
+    for i in 0..connections_to_make {
+        let connection: (usize, usize, f64) = all_distances[i];
+        // println!("connecting points {} and {}", connection.0, connection.1);
+        let mut new_component: Vec<usize> = Vec::new();
+        let mut other_components: Vec<Vec<usize>> = Vec::new();
+        for component in components.iter() {
+            // if either side of our connection is in the component,
+            // we'll pull these into the new_component to merge and stick it on the end
+            // otherwise, we'll push it onto the list
+            if component.contains(&connection.0) || component.contains(&connection.1) {
+                // println!("this component has one vertex of our new edge, it's in our _new_ component");
+                for vertex in component.iter() {
+                    new_component.push(*vertex);
+                }
+            } else {
+                // println!("this component has no vertex on our new edge, so it won't grow");
+                other_components.push(component.clone());
+            }
+        }
+        // now rebuild the components
+        components = other_components;
+        components.push(new_component);
+        // println!("after connection {}, we have {} components", i+1, components.len());
+    }
+    // now let's get the size of the components, sort that list, and get the largest 3
+    let mut component_sizes: Vec<usize> = components.iter().map(|x| x.len()).collect();
+    component_sizes.sort();
+    component_sizes.reverse();
+    println!("the largest 3 components have sizes: {}, {}, {}", component_sizes[0], component_sizes[1], component_sizes[2]);
+    let total: usize = component_sizes[0] * component_sizes[1] * component_sizes[2];
+    assert_eq!(total, 40);
+    println!("total is {total}");
+
+    // now let's keep going until the thing is fully connected
+    let mut fully_connected: bool = components.len() == 1;
+    let mut connections_made = connections_to_make;
+    while !fully_connected {
+        let connection: (usize, usize, f64) = all_distances[connections_made];
+        let mut new_component: Vec<usize> = Vec::new();
+        let mut other_components: Vec<Vec<usize>> = Vec::new();
+        for component in components.iter() {
+            if component.contains(&connection.0) || component.contains(&connection.1) {
+                for vertex in component.iter() {
+                    new_component.push(*vertex);
+                }
+            } else {
+                other_components.push(component.clone());
+            }
+        }
+        components = other_components;
+        components.push(new_component);
+
+        connections_made += 1;
+        fully_connected = components.len() == 1;
+    }
+    connections_made -= 1;
+    println!("it took {connections_made} connections to fully connect it");
+    println!("final connection between {:?} and {:?}", points[all_distances[connections_made].0], points[all_distances[connections_made].1]);
+    let total_2 = points[all_distances[connections_made].0][0] * points[all_distances[connections_made].1][0];
+    assert_eq!(total_2, 25272);
+    println!("distance to the wall is {total_2}");
+    println!("------- end of day {} -------\n", day);
+}
+
+mod day07;    
 
 fn main() {
-    run_day01(1);
-    run_day02(2);
-    run_day03(3);
-    run_day04(4);
-    run_day05(5);
-    run_day06(6);
-    day07::run(7);
+    day01();
+    day02();
+    day03(3);
+    day04(4);
+    day05(5);
+    day06(6);
+    day07::run(7);    
+    day08(8);        
 }
