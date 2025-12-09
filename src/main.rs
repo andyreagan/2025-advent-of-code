@@ -76,7 +76,7 @@ fn process_day02(input: &str) -> (u64, u64, u64, u64) {
         let range_parts: Vec<&str> = range.split('-').collect();
         let start: u64 = range_parts[0].to_string().parse().unwrap();
         let end: u64 = range_parts[1].to_string().parse().unwrap();
-        for i in start..end+1 {
+        for i in start..=end {
             let i_str = i.to_string();
             let str_len = i_str.len();
             if str_len % 2 == 0 {
@@ -150,7 +150,7 @@ fn process_day03(input: &str) -> (i32, i128) {
         let mut value_str = bank.chars().nth(position_max).expect("has position");
         let mut value_max = value_str as i32;
         for cell in 0..12 {
-            for i in position_max+1..bank.len()-(12-cell)+1 {
+            for i in position_max+1..=bank.len()-(12-cell) {
                 value_str = bank.chars().nth(i).expect("has position");
                 let value_tmp = value_str as i32;
                 if value_tmp > value_max {
@@ -216,8 +216,8 @@ fn process_day04(input: &str) -> (i32, i32) {
     }
     let size = (arr.len(), arr[0].len());
     let mut reachable_first = 0;
-    for i in 1..size.0+1 {
-        for j in 1..size.1+1 {
+    for i in 1..=size.0 {
+        for j in 1..=size.1 {
             if arr[i-1][j-1] {
                 if (
                     safe_access(&arr, &size.0, &size.1, &(i-1), &(j-1)) +
@@ -238,8 +238,8 @@ fn process_day04(input: &str) -> (i32, i32) {
     let mut reachable_this_scan = 1;
     while reachable_this_scan > 0 {
         reachable_this_scan = 0;
-        for i in 1..size.0+1 {
-            for j in 1..size.1+1 {
+        for i in 1..=size.0 {
+            for j in 1..=size.1 {
                 if arr[i-1][j-1] {
                     if (
                         safe_access(&arr, &size.0, &size.1, &(i-1), &(j-1)) +
