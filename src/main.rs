@@ -474,6 +474,7 @@ mod tests_day06 {
 }
 
 mod day07;
+mod day08;    
 
 fn main() {
     run_day01(1);
@@ -483,4 +484,5 @@ fn main() {
     run_day05(5);
     run_day06(6);
     day07::run(7);
+    day08::run(8);
 }
