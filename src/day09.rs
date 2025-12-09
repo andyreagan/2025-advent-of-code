@@ -7,8 +7,9 @@ fn area(p1: &Vec<i32>, p2: &Vec<i32>) -> f64 {
     dx*dy
 }
 
-fn process_day09(input: &str, connections_to_make: usize) -> (usize, i32) {
+fn process_day09(input: &str) -> (i64, i64) {
     let lines: Vec<&str> = input.lines().collect();
+    (0, 0)
 }
 
 pub fn run(day: i8) {
@@ -16,10 +17,9 @@ pub fn run(day: i8) {
     let file = File::open(format!("inputs/day{:02}.txt", day));
     let mut input = String::new();
     let _ = file.expect(&format!("file inputs/day{:02}.txt does not exist", day)).read_to_string(&mut input);
-    let connections_to_make: usize = 10; // TODO: adjust for real input
-    let (total, total_2) = process_day08(&input, connections_to_make);
-    println!("total is {total}");
-    println!("distance to the wall is {total_2}");
+    let (part_1, part_2) = process_day09(&input);
+    println!("biggest rectangle is {part_1}");
+    println!("TBD is {part_2}");
     println!("------- end of day {} -------\n", day);
 }
 
@@ -29,17 +29,16 @@ mod tests {
 
     #[test]
     fn test_process_day09() {
-        let input = "..............
-.......#...#..
-..............
-..#....#......
-..............
-..#......#....
-..............
-.........#.#..
-..............";
-        let (total, total_2) = process_day09(input, 10);
-        assert_eq!(total, 40);
-        assert_eq!(total_2, 25272);
+        let input = "7,1
+11,1
+11,7
+9,7
+9,5
+2,5
+2,3
+7,3";
+        let (part_1, part_2) = process_day09(input);
+        assert_eq!(part_1, 40);
+        assert_eq!(part_2, 0);
     }
 }

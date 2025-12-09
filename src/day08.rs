@@ -92,7 +92,7 @@ pub fn run(day: i8) {
     let file = File::open(format!("inputs/day{:02}.txt", day));
     let mut input = String::new();
     let _ = file.expect(&format!("file inputs/day{:02}.txt does not exist", day)).read_to_string(&mut input);
-    let connections_to_make: usize = 10; // TODO: adjust for real input
+    let connections_to_make: usize = 1000;
     let (total, total_2) = process_day08(&input, connections_to_make);
     println!("total is {total}");
     println!("distance to the wall is {total_2}");
