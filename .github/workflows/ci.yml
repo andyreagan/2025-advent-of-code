@@ -15,5 +15,5 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Run
-        run: RUST_BACKTRACE=1 cargo run
+      - name: Run tests
+        run: cargo test --verbose
