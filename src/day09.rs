@@ -3,6 +3,7 @@ use std::io::prelude::*;
 use std::cmp::max;
 use std::cmp::min;
 use more_asserts::assert_ge;
+use indicatif::ProgressBar;
 
 fn area(p1: &Vec<i32>, p2: &Vec<i32>) -> i64 {
     let dx = ((p1[0] - p2[0]).abs() + 1) as i64;
@@ -19,65 +20,65 @@ fn straight_line_distance(p1: &Vec<i32>, p2: &Vec<i32>) -> i32 {
 
 fn n_intersections(p: &Vec<i32>, direction: &i8, up_walls: &Vec<&Vec<&Vec<i32>>>, across_walls: &Vec<&Vec<&Vec<i32>>>) -> usize {
     // direction 0 right 1 down 2 left 3 up
+    // the matching x[0][1] <= p[1] will hit the corner (end of the wall)
+    // while x[0][1] < p[1] will not
+    // since we dont care about corners, we'll forgo it
     match direction {
-        0 => up_walls.iter().filter(|x| x[0][0] > p[0]).filter(|x| (x[0][1] <= p[1] && x[1][1] >= p[1]) || (x[1][1] <= p[1] && x[0][1] >= p[1])).collect::<Vec<&&Vec<&Vec<i32>>>>().len(),
-        1 => across_walls.iter().filter(|x| x[0][1] > p[1]).filter(|x| (x[0][0] <= p[0] && x[1][0] >= p[1]) || (x[1][0] <= p[1] && x[0][0] >= p[1])).collect::<Vec<&&Vec<&Vec<i32>>>>().len(),
-        2 => up_walls.iter().filter(|x| x[0][0] < p[0]).filter(|x| (x[0][1] <= p[1] && x[1][1] >= p[1]) || (x[1][1] <= p[1] && x[0][1] >= p[1])).collect::<Vec<&&Vec<&Vec<i32>>>>().len(),
-        3 => across_walls.iter().filter(|x| x[0][1] < p[1]).filter(|x| (x[0][0] <= p[0] && x[1][0] >= p[1]) || (x[1][0] <= p[1] && x[0][0] >= p[1])).collect::<Vec<&&Vec<&Vec<i32>>>>().len(),
+        0 => up_walls.iter().filter(|x| x[0][0] > p[0]).filter(|x| (x[0][1] < p[1] && x[1][1] > p[1]) || (x[1][1] < p[1] && x[0][1] > p[1])).collect::<Vec<&&Vec<&Vec<i32>>>>().len(),
+        1 => across_walls.iter().filter(|x| x[0][1] > p[1]).filter(|x| (x[0][0] < p[0] && x[1][0] > p[1]) || (x[1][0] < p[1] && x[0][0] > p[1])).collect::<Vec<&&Vec<&Vec<i32>>>>().len(),
+        2 => up_walls.iter().filter(|x| x[0][0] < p[0]).filter(|x| (x[0][1] < p[1] && x[1][1] > p[1]) || (x[1][1] < p[1] && x[0][1] > p[1])).collect::<Vec<&&Vec<&Vec<i32>>>>().len(),
+        3 => across_walls.iter().filter(|x| x[0][1] < p[1]).filter(|x| (x[0][0] < p[0] && x[1][0] > p[1]) || (x[1][0] < p[1] && x[0][0] > p[1])).collect::<Vec<&&Vec<&Vec<i32>>>>().len(),
         _ => panic!("not a valid direction!"),
     }
 }
 
-fn inside_rectangle(p: &Vec<i32>, p1: &Vec<i32>, p2: &Vec<i32>) -> bool {
-    p[0] > min(p1[0], p2[0]) &&
-    p[0] < max(p1[0], p2[0]) &&
-    p[1] > min(p1[1], p2[1]) &&
-    p[1] < max(p1[1], p2[1])
-}
+// fn inside_rectangle(p: &Vec<i32>, p1: &Vec<i32>, p2: &Vec<i32>) -> bool {
+//     p[0] > min(p1[0], p2[0]) &&
+//     p[0] < max(p1[0], p2[0]) &&
+//     p[1] > min(p1[1], p2[1]) &&
+//     p[1] < max(p1[1], p2[1])
+// }
+
 
 fn inside_shape(p: &Vec<i32>, up_walls: &Vec<&Vec<&Vec<i32>>>, across_walls: &Vec<&Vec<&Vec<i32>>>) -> bool {
     // first let's check if the point fall directly on a wall
     for wall in up_walls.iter() {
         if wall[0][0] == p[0] && ((wall[0][1] <= p[1] && wall[1][1] >= p[1]) || (wall[1][1] <= p[1] && wall[0][1] >= p[1])) {
-            println!("point {:?} is on wall {:?}", p, wall);
+            // println!("point {:?} is on wall {:?}", p, wall);
             return true;
         }
         if wall[0][1] == p[1] && ((wall[0][0] <= p[0] && wall[1][0] >= p[0]) || (wall[1][0] <= p[0] && wall[0][0] >= p[0])) {
-            println!("point {:?} is on wall {:?}", p, wall);
+            // println!("point {:?} is on wall {:?}", p, wall);
             return true;
         }
     }
     for wall in across_walls.iter() {
         if wall[0][0] == p[0] && ((wall[0][1] <= p[1] && wall[1][1] >= p[1]) || (wall[1][1] <= p[1] && wall[0][1] >= p[1])) {
-            println!("point {:?} is on wall {:?}", p, wall);
+            // println!("point {:?} is on wall {:?}", p, wall);
             return true;
         }
         if wall[0][1] == p[1] && ((wall[0][0] <= p[0] && wall[1][0] >= p[0]) || (wall[1][0] <= p[0] && wall[0][0] >= p[0])) {
-            println!("point {:?} is on wall {:?}", p, wall);
+            // println!("point {:?} is on wall {:?}", p, wall);
             return true;
         }
     }
-    let n_right = n_intersections(p, &0, up_walls, across_walls);
-    if n_right % 2 == 0 {
-        println!("point {:?} is outside (right count {})", p, n_right);
-        return false;
+    if n_intersections(p, &0, up_walls, across_walls) % 2 == 1 {
+        // println!("point {:?} hit a single wall going right, must be inside", p);
+        return true;
     }
-    let n_down = n_intersections(p, &1, up_walls, across_walls);
-    if n_down % 2 == 0 {
-        println!("point {:?} is outside (down count {})", p, n_down);
-        return false;
+    if n_intersections(p, &1, up_walls, across_walls) % 2 == 1 {
+        // println!("point {:?} hit a single wall going down, must be inside", p);
+        return true;        
     }
-    let n_left = n_intersections(p, &2, up_walls, across_walls);
-    if n_left % 2 == 0 {
-        println!("point {:?} is outside (left count {})", p, n_left);
-        return false;
+    if n_intersections(p, &2, up_walls, across_walls) % 2 == 1 {
+        // println!("point {:?} hit a single wall going left, must be inside", p);
+        return true;        
     }
-    let n_up = n_intersections(p, &3, up_walls, across_walls);
-    if n_up % 2 == 0 {
-        println!("point {:?} is outside (up count {})", p, n_up);
-        return false;
+    if n_intersections(p, &3, up_walls, across_walls) % 2 == 1 {
+        // println!("point {:?} hit a single wall going up, must be inside", p);
+        return true;
     }
-    n_up % 2 == 1
+    false
 }
 
 fn process_day09(input: &str) -> (i64, i64) {
@@ -122,7 +123,7 @@ fn process_day09(input: &str) -> (i64, i64) {
     for i in 0..points.len()-1 {
         walls.push([&points[i], &points[i+1]].to_vec());
     }
-    println!("we have {} walls", walls.len());  ` `
+    println!("we have {} walls", walls.len());
     // we can separate the walls by orientation:
     let mut up_walls = walls.iter()
         .filter(|x| x[0][0] == x[1][0])
@@ -134,9 +135,12 @@ fn process_day09(input: &str) -> (i64, i64) {
     across_walls.sort_by(|a, b| a[1].partial_cmp(&b[1]).unwrap());
     println!("we have {} up walls and {} across walls", up_walls.len(), across_walls.len());
     let mut biggest_area_inside: i64 = 0;
+    let bar = ProgressBar::new((points.len()*(points.len()+1)/2).try_into().unwrap());
     for i in 0..points.len() {
         for j in i+1..points.len() {
-            println!("trying rectangle [{:?},{:?}]", points[i], points[j]);
+            bar.inc(1);
+            // println!("trying rectangle [{:?},{:?}]", points[i], points[j]);
+            
             // let straight_line = points[i][0] == points[j][0] || points[i][1] == points[j][1];
             // let mut right_intersections: usize = 1;
             // if !straight_line {
@@ -172,10 +176,12 @@ fn process_day09(input: &str) -> (i64, i64) {
             //         }
             //     }
             // }
+            
             // there are shapes where we have no extra points inside the rectangle
             // and the middle is in the bigger shape, but one of the corners is outside
             // let's resort to checking that every point is inside the shape
             // just the corners isn't sufficient
+            
             let mut all_inside: bool = true;
             for k in min(points[i][0], points[j][0])..=max(points[i][0], points[j][0]) {
                 for l in min(points[i][1], points[j][1])..=max(points[i][1], points[j][1]) {
@@ -191,14 +197,15 @@ fn process_day09(input: &str) -> (i64, i64) {
             }
             if all_inside {
                 let area_value = area(&points[i], &points[j]);
-                println!("valid rectangle! area is {}", area_value);
+                // println!("valid rectangle! area is {}", area_value);
                 biggest_area_inside = max(biggest_area_inside, area_value);
                 if biggest_area_inside == area_value {
                     println!("!!! new biggest area inside is {}", biggest_area_inside);
                 }
             }
         }
-    }        
+    }
+    bar.finish();
     (biggest_area, biggest_area_inside)
 }
 
