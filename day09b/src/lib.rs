@@ -12,6 +12,10 @@ fn straight_line_distance(p1: &Vec<i32>, p2: &Vec<i32>) -> i32 {
 }
 
 fn n_intersections(p: &Vec<i32>, up_walls: &Vec<&Vec<&Vec<i32>>>) -> usize {
+    // direction 0 right 1 down 2 left 3 up
+    // the matching x[0][1] <= p[1] will hit the corner (end of the wall)
+    // while x[0][1] < p[1] will not
+    // since we dont care about corners, we'll forgo it
     let perpendicular_walls_hit: Vec<&&Vec<&Vec<i32>>> = up_walls.iter()
         .filter(|vertices| vertices[0][0] > p[0])
         .filter(|vertices|
@@ -19,10 +23,12 @@ fn n_intersections(p: &Vec<i32>, up_walls: &Vec<&Vec<&Vec<i32>>>) -> usize {
             p[1] <= max(vertices[0][1], vertices[1][1])
         )
         .collect();
+    // println!("point {:?} going right hits walls {:?} perpendicularly", p, perpendicular_walls_hit);
     perpendicular_walls_hit.len()
 }
 
 fn inside_rectangle(p: &Vec<i32>, p1: &Vec<i32>, p2: &Vec<i32>) -> bool {
+    // strictly inside, not just on the edge
     p[0] > min(p1[0], p2[0]) &&
     p[0] < max(p1[0], p2[0]) &&
     p[1] > min(p1[1], p2[1]) &&
@@ -30,6 +36,8 @@ fn inside_rectangle(p: &Vec<i32>, p1: &Vec<i32>, p2: &Vec<i32>) -> bool {
 }
 
 fn inside_shape(p: &Vec<i32>, up_walls: &Vec<&Vec<&Vec<i32>>>, across_walls: &Vec<&Vec<&Vec<i32>>>) -> bool {
+    // first let's check if the point fall directly on a wall
+    // that's easier to check than the ray casting?
     let on_walls_vertical: Vec<&&Vec<&Vec<i32>>> = up_walls.iter()
         .filter(|vertices| vertices[0][0] == p[0])
         .filter(|vertices|
@@ -54,7 +62,8 @@ fn inside_shape(p: &Vec<i32>, up_walls: &Vec<&Vec<&Vec<i32>>>, across_walls: &Ve
 }
 
 fn vertices_to_walls(points: &Vec<Vec<i32>>) -> Vec<Vec<&Vec<i32>>> {
-    let mut walls: Vec<Vec<&Vec<i32>>> = Vec::new();
+    // let's make a vector of the walls (including connecting start and beginning)
+    let mut walls: Vec<Vec<&Vec<i32>>> = Vec::new(); // could maybe build this directly...
     walls.push([&points[points.len()-1], &points[0]].to_vec());
     for i in 0..points.len()-1 {
         walls.push([&points[i], &points[i+1]].to_vec());
@@ -62,11 +71,15 @@ fn vertices_to_walls(points: &Vec<Vec<i32>>) -> Vec<Vec<&Vec<i32>>> {
     walls
 }
 
+// the lifetimes annotation here is from the compiler
 fn split_walls<'a>(walls: &'a Vec<Vec<&'a Vec<i32>>>) -> (Vec<&'a Vec<&'a Vec<i32>>>, Vec<&'a Vec<&'a Vec<i32>>>) {
+    // vertical walls are "up" walls, horizontal are "across" walls
+    // vertical means the x points are equal
     let mut up_walls = walls.iter()
         .filter(|vertices| vertices[0][0] == vertices[1][0])
         .collect::<Vec<&Vec<&Vec<i32>>>>();
     up_walls.sort_by(|a, b| a[0].partial_cmp(&b[0]).unwrap());
+    // horizontal means the y points are equal
     let mut across_walls = walls.iter()
         .filter(|vertices| vertices[0][1] == vertices[1][1])
         .collect::<Vec<&Vec<&Vec<i32>>>>();
@@ -84,12 +97,17 @@ pub fn process(input: &str) -> i64 {
         })
         .collect();
 
+    // for part 2 - let's check if any points are adjacent
     let mut min_distance = straight_line_distance(&points[0], &points[points.len()-1]);
     for i in 0..points.len()-1 {
         min_distance = min(min_distance, straight_line_distance(&points[i], &points[i+1]));
     }
+    // we'll rely on this fact for our algorithm
 
+    // let's collapse the points so that min_x and min_y are at 0,0, and every jump is by 2 (second x position will be 2, etc)
     let mut adjusted_points: Vec<Vec<i32>> = Vec::new();
+    // we'll need to sort every existing x point, and y point
+    // then use those sorted lists to determine the adjusted position
     let mut sorted_x: Vec<i32> = points.iter().map(|p| p[0]).collect();
     sorted_x.sort();
     sorted_x.dedup();
@@ -102,11 +120,27 @@ pub fn process(input: &str) -> i64 {
         adjusted_points.push(vec![adjusted_x, adjusted_y]);
     }
 
+    // for every possible rectangle: it's not all red/green if any point exists
+    // inside of our rectangle
+    // that's necessary but not sufficient: we can't draw on the _outside_ of our
+    // area either
+    // we have to know whether we're winding it clockwise or counterclockwise
+    // determining this seems hard - you don't know until it's all the way connected
+    // if you loop back around (can basically change the direction)
+    // nevermind: we'll just drop a point in the rectangle,
+    // then check how many walls it crosses on it's way out
+    // I think I remember this algorithm... it came from somewhere in my head
+    // so now, we can take a point, and a direction,
+    // and determine if it cross any other line?
     let walls = vertices_to_walls(&adjusted_points);
+    // we can separate the walls by orientation:
     let (up_walls, across_walls) = split_walls(&walls);
     let mut biggest_area_inside: i64 = 0;
     for i in 0..points.len() {
         for j in i+1..points.len() {
+            // we'll do a series of checks in order of increasing complexity
+            // first, are there any other points inside the rectangle?
+            // can use the raw coordinates for this, same as area calc
             let mut other_points_inside: bool = false;
             for k in 0..points.len() {
                 if k != i && k != j {
@@ -118,15 +152,22 @@ pub fn process(input: &str) -> i64 {
             }
             let area_value = area(&points[i], &points[j]);
             if !other_points_inside && area_value > biggest_area_inside {
+                // now we check the corners
+                // and this really boils down to checking only the two "opposite" corners
+                // since the red tiles we have are certainly on an edge already
+                // we need to do this in adjusted coordinates
+                // since our walls are in adjusted coordinates
                 let other_corner_1 = vec![adjusted_points[i][0], adjusted_points[j][1]];
                 let other_corner_2 = vec![adjusted_points[j][0], adjusted_points[i][1]];
                 if inside_shape(&other_corner_1, &up_walls, &across_walls) &&
                     inside_shape(&other_corner_2, &up_walls, &across_walls) {
+                    // need to check the whole walls
                     let x_min = min(adjusted_points[i][0], adjusted_points[j][0]);
                     let y_min = min(adjusted_points[i][1], adjusted_points[j][1]);
                     let x_max = max(adjusted_points[i][0], adjusted_points[j][0]);
                     let y_max = max(adjusted_points[i][1], adjusted_points[j][1]);
                     let mut walls_inside = true;
+                    // first check the horizontal walls
                     for x in x_min..x_max {
                         let bottom_wall_pt = vec![x, y_min];
                         if !inside_shape(&bottom_wall_pt, &up_walls, &across_walls) {
@@ -139,6 +180,7 @@ pub fn process(input: &str) -> i64 {
                             break
                         }
                     }
+                    // check the vertical walls if we need to
                     if walls_inside {
                         for y in y_min..y_max {
                             let left_wall_pt = vec![x_min, y];

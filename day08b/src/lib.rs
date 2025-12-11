@@ -14,15 +14,20 @@ pub fn process(input: &str, connections_to_make: usize) -> i32 {
                 .collect()
         })
         .collect();
+    // this is a more sortable format for the matrix (a sparse representation)
     let mut all_distances: Vec<(usize, usize, f64)> = Vec::new();
     for i in 0..points.len() {
+        // only need to compute half the matrix
+        // (and not the diagonal)
         for j in i+1..points.len() {
             let dist = distance(&points[i], &points[j]);
             all_distances.push((i, j, dist));
         }
     }
     all_distances.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
+    // now let's build up the connected components list
     let mut components: Vec<Vec<usize>> = Vec::new();
+    // initialize every one as separate
     for i in 0..points.len() {
         components.push(vec![i]);
     }
@@ -31,6 +36,9 @@ pub fn process(input: &str, connections_to_make: usize) -> i32 {
         let mut new_component: Vec<usize> = Vec::new();
         let mut other_components: Vec<Vec<usize>> = Vec::new();
         for component in components.iter() {
+            // if either side of our connection is in the component,
+            // we'll pull these into the new_component to merge and stick it on the end
+            // otherwise, we'll push it onto the list
             if component.contains(&connection.0) || component.contains(&connection.1) {
                 for vertex in component.iter() {
                     new_component.push(*vertex);
@@ -39,11 +47,12 @@ pub fn process(input: &str, connections_to_make: usize) -> i32 {
                 other_components.push(component.clone());
             }
         }
+        // now rebuild the components
         components = other_components;
         components.push(new_component);
     }
 
-    // keep going until fully connected
+    // now let's keep going until the thing is fully connected
     let mut fully_connected: bool = components.len() == 1;
     let mut connections_made = connections_to_make;
     while !fully_connected {
