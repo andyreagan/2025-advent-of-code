@@ -53,3 +53,9 @@ Run the benchmark with
 ```
 cd runner && cargo run --release --bin bench
 ```
+
+## All years
+
+- [2025](#) (Current)
+- [2022](https://github.com/andyreagan/2022-advent-of-code)
+- [2018](https://github.com/andyreagan/2018-advent-of-code) 
