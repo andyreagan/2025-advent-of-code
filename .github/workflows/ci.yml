@@ -15,5 +15,8 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Create empty input files
+        run: for d in day*/; do touch "$d/input.txt"; done
+
       - name: Run tests
         run: ./scripts/test-all.sh
