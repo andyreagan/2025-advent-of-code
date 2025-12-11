@@ -52,6 +52,7 @@ fn inside_rectangle(p: &Vec<i32>, p1: &Vec<i32>, p2: &Vec<i32>) -> bool {
 
 fn inside_shape(p: &Vec<i32>, up_walls: &Vec<&Vec<&Vec<i32>>>, across_walls: &Vec<&Vec<&Vec<i32>>>) -> bool {
     // first let's check if the point fall directly on a wall
+    // that's easier to check than the ray casting?
     for wall in up_walls.iter() {
         if wall[0][0] == p[0] && ((wall[0][1] <= p[1] && wall[1][1] >= p[1]) || (wall[1][1] <= p[1] && wall[0][1] >= p[1])) {
             // println!("point {:?} is on wall {:?}", p, wall);
@@ -167,7 +168,7 @@ fn process_day09(input: &str, show_progress: bool) -> (i64, i64) {
     let max_x = points.iter().map(|p| p[0]).max().unwrap() as i64;
     let min_y = points.iter().map(|p| p[1]).min().unwrap() as i64;
     let max_y = points.iter().map(|p| p[1]).max().unwrap() as i64;
-    println!("bounding box is x={}..{} y={}..{}, total area {}", min_x, max_x, min_y, max_y, (max_x - min_x) * (max_y - min_y));
+    println!("bounding box is x={}..{} y={}..{}, total area {}", min_x , max_x , min_y, max_y, (max_x - min_x) * (max_y - min_y));
 
     // let's collapse the points so that min_x and min_y are at 0,0, and every jump is by 2 (second x position will be 2, etc)
     let mut adjusted_points: Vec<Vec<i32>> = Vec::new();
@@ -180,9 +181,9 @@ fn process_day09(input: &str, show_progress: bool) -> (i64, i64) {
     sorted_y.sort();
     sorted_y.dedup();
     for p in points.iter() {
-        let adjusted_x = (sorted_x.iter().position(|x| *x == p[0]).unwrap()) as i32;
-        let adjusted_y = (sorted_y.iter().position(|y| *y == p[1]).unwrap()) as i32;
-        adjusted_points.push(vec![adjusted_x, adjusted_y]);
+        let adjusted_x = (sorted_x.iter().position(|x| *x == p[0]).unwrap() * 2) as i32;
+        let adjusted_y = (sorted_y.iter().position(|y| *y == p[1]).unwrap() * 2) as i32;
+        adjusted_points.push(vec![adjusted_x , adjusted_y]);
     }
 
     // check the new points bounding box and area
@@ -190,7 +191,7 @@ fn process_day09(input: &str, show_progress: bool) -> (i64, i64) {
     let adj_max_x = adjusted_points.iter().map(|p| p[0]).max().unwrap() as i64;
     let adj_min_y = adjusted_points.iter().map(|p| p[1]).min().unwrap() as i64;
     let adj_max_y = adjusted_points.iter().map(|p| p[1]).max().unwrap() as i64;
-    println!("adjusted bounding box is x={}..{} y={}..{}, total area {}", adj_min_x, adj_max_x, adj_min_y, adj_max_y, (adj_max_x - adj_min_x) * (adj_max_y - adj_min_y));
+    println!("adjusted bounding box is x={}..{} y={}..{}, total area {}", adj_min_x , adj_max_x , adj_min_y, adj_max_y, (adj_max_x - adj_min_x) * (adj_max_y - adj_min_y));
 
     // for every possible rectangle: it's not all red/green if any point exists
     // inside of our rectangle
@@ -204,7 +205,7 @@ fn process_day09(input: &str, show_progress: bool) -> (i64, i64) {
     // I think I remember this algorithm... it came from somewhere in my head
     // so now, we can take a point, and a direction,
     // and determine if it cross any other line?
-    let walls = vertices_to_walls(&points);
+    let walls = vertices_to_walls(&adjusted_points);
     println!("we have {} walls", walls.len());
 
     // pretty_print_walls(&walls);
@@ -219,49 +220,12 @@ fn process_day09(input: &str, show_progress: bool) -> (i64, i64) {
             if show_progress {
                 bar.inc(1);
             }
-            println!("trying rectangle [{:?},{:?}]", points[i], points[j]);
-            
-            // let straight_line = points[i][0] == points[j][0] || points[i][1] == points[j][1];
-            // let mut right_intersections: usize = 1;
-            // if !straight_line {
-            //     let inside_point = vec![
-            //         (points[i][0] + points[j][0]) / 2,
-            //         (points[i][1] + points[j][1]) / 2,
-            //     ];                
-            //     right_intersections = n_intersections(&inside_point, &(0 as i8), &up_walls, &across_walls);
-            //     println!("we picked inside point {:?} which has intersections of ", inside_point);
-            // } else {
-            //     println!("straight line rectangle, so we consider ourselves inside");
-            // }
-            // if right_intersections % 2 == 1 {
-            //     println!("odd # right intersections (or straight line) means we're inside");
-            //     // odd # intersections means we're inside
-            //     // now we need to check that there are no other points inside
-            //     let mut other_points_inside: bool = false;
-            //     for k in 0..points.len() {
-            //         if k != i && k != j {
-            //             if inside_rectangle(&points[k], &points[i], &points[j]) {
-            //                 other_points_inside = true;
-            //                 break;
-            //             }
-            //         }
-            //     }
-            //     println!("other points inside? {}", other_points_inside);
-            //     if !other_points_inside {
-            //         let area_value = area(&points[i], &points[j]);
-            //         println!("valid rectangle! area is {}", area_value);
-            //         biggest_area_inside = max(biggest_area_inside, area_value);
-            //         if biggest_area_inside == area_value {
-            //             println!("!!! new biggest area inside is {}", biggest_area_inside);
-            //         }
-            //     }
-            // }
+            // println!("trying rectangle [{:?},{:?}], using compressed coordinates [{:?},{:?}]", points[i], points[j], adjusted_points[i], adjusted_points[j]);
             
             // there are shapes where we have no extra points inside the rectangle
             // and the middle is in the bigger shape, but one of the corners is outside
             // let's resort to checking that every point is inside the shape
             // just the corners isn't sufficient
-            
             // let mut all_inside: bool = true;
             // for k in min(points[i][0], points[j][0])..=max(points[i][0], points[j][0]) {
             //     for l in min(points[i][1], points[j][1])..=max(points[i][1], points[j][1]) {
@@ -283,11 +247,11 @@ fn process_day09(input: &str, show_progress: bool) -> (i64, i64) {
             //         println!("!!! new biggest area inside is {}", biggest_area_inside);
             //     }
             // }
-
             // that worked!! but it was too inefficient
-            // I thought about and I think we can just check the corners, along with checking
-            // that there are no other points inside
-            // start with borrowing the "other points inside" check from my first attempt
+
+            // we'll do a series of checks in order of increasing complexity
+            // first, are there any other points inside the rectangle?
+            // can use the raw coordinates for this, same as area calc
             let mut other_points_inside: bool = false;
             for k in 0..points.len() {
                 if k != i && k != j {
@@ -300,65 +264,64 @@ fn process_day09(input: &str, show_progress: bool) -> (i64, i64) {
             let area_value = area(&points[i], &points[j]);
             // println!("other points inside? {}", other_points_inside);
             if !other_points_inside && area_value > biggest_area_inside {
-                println!("   -> no other points inside and the area is bigger, checking corners");
+                // println!("   -> no other points inside and the area is bigger, checking corners");
                 // now we check the corners
                 // and this really boils down to checking only the two "opposite" corners
                 // since the red tiles we have are certainly on an edge already
-                let opposing_corner_1 = vec![points[i][0], points[j][1]];
-                let opposing_corner_2 = vec![points[j][0], points[i][1]];
-                if inside_shape(&opposing_corner_1, &up_walls, &across_walls) && inside_shape(&opposing_corner_2, &up_walls, &across_walls) {
-                    println!("       -> corners are inside, now checking walls");
-                // need to check the whole walls
-                let x_min = min(points[i][0], points[j][0]);
-                let y_min = min(points[i][1], points[j][1]);
-                let x_max = max(points[i][0], points[j][0]);
-                let y_max = max(points[i][1], points[j][1]);
-                let mut walls_inside = true;
-                for x in x_min..x_max {
-                    let bottom_wall_pt = vec![x, y_min];
-                    if !inside_shape(&bottom_wall_pt, &up_walls, &across_walls) {
-                        // println!("bottom wall pt not inside");
-                        walls_inside = false;
-                        break
-                    }
-                    let top_wall_pt = vec![x, y_max];
-                    if !inside_shape(&top_wall_pt, &up_walls, &across_walls) {
-                        // println!("top wall pt not inside");
-                        walls_inside = false;
-                        break
-                    }
-                }
-                // check the vertical walls if we need to
-                if walls_inside {
-                    for y in y_min..y_max {
-                        let left_wall_pt = vec![x_min, y];
-                        if !inside_shape(&left_wall_pt, &up_walls, &across_walls) {
-                            // println!("left wall pt not inside");
+                // we need to do this in adjusted coordinates
+                // since our walls are in adjusted coordinates
+                let other_corner_1 = vec![adjusted_points[i][0], adjusted_points[j][1]];
+                let other_corner_2 = vec![adjusted_points[j][0], adjusted_points[i][1]];
+                if inside_shape(&other_corner_1, &up_walls, &across_walls) && 
+                    inside_shape(&other_corner_2, &up_walls, &across_walls) {
+                    // println!("       -> corners are inside, now checking walls");
+                    // need to check the whole walls
+                    let x_min = min(adjusted_points[i][0], adjusted_points[j][0]);
+                    let y_min = min(adjusted_points[i][1], adjusted_points[j][1]);
+                    let x_max = max(adjusted_points[i][0], adjusted_points[j][0]);
+                    let y_max = max(adjusted_points[i][1], adjusted_points[j][1]);
+                    let mut walls_inside = true;
+                    // first check the horizontal walls
+                    for x in x_min..x_max {
+                        let bottom_wall_pt = vec![x, y_min];
+                        if !inside_shape(&bottom_wall_pt, &up_walls, &across_walls) {
+                            // println!("bottom wall pt not inside");
                             walls_inside = false;
                             break
                         }
-                        let right_wall_pt = vec![x_max, y];
-                        if !inside_shape(&right_wall_pt, &up_walls, &across_walls) {
-                            // println!("right wall pt not inside");
+                        let top_wall_pt = vec![x, y_max];
+                        if !inside_shape(&top_wall_pt, &up_walls, &across_walls) {
+                            // println!("top wall pt not inside");
                             walls_inside = false;
                             break
                         }
-                    }                
+                    }
+                    // check the vertical walls if we need to
+                    if walls_inside {
+                        for y in y_min..y_max {
+                            let left_wall_pt = vec![x_min, y];
+                            if !inside_shape(&left_wall_pt, &up_walls, &across_walls) {
+                                // println!("left wall pt not inside");
+                                walls_inside = false;
+                                break
+                            }
+                            let right_wall_pt = vec![x_max, y];
+                            if !inside_shape(&right_wall_pt, &up_walls, &across_walls) {
+                                // println!("right wall pt not inside");
+                                walls_inside = false;
+                                break
+                            }
+                        }                
+                    }
+                    if walls_inside {
+                        // println!("           -> walls inside, considering for biggest area");
+                        // println!("valid rectangle! area is {}", area_value);
+                        biggest_area_inside = max(biggest_area_inside, area_value);
+                        // if biggest_area_inside == area_value {
+                        //     println!("!!!!!!!!!! new biggest area inside is {}", biggest_area_inside);
+                        // }                    
+                    }
                 }
-                if walls_inside {
-                    println!("           -> walls inside, considering for biggest area");
-                    // println!("valid rectangle! area is {}", area_value);
-                    biggest_area_inside = max(biggest_area_inside, area_value);
-                    if biggest_area_inside == area_value {
-                        println!("!!!!!!!!!! new biggest area inside is {}", biggest_area_inside);
-                    }                    
-                } // else {
-                } else {
-                    // println!("corners are outside");
-                }
-
-                //     println!("walls not inside")
-                // }
             }
         }
     }
@@ -379,6 +342,7 @@ pub fn run(day: i8) {
     println!("------- end of day {} -------\n", day);
 }
 
+#[cfg(test)]
 fn pretty_print_grid(grid: &Vec<Vec<bool>>) {
     for y in grid.iter() {
         println!("{}", y.iter().map(|x| {
@@ -391,41 +355,41 @@ fn pretty_print_grid(grid: &Vec<Vec<bool>>) {
     }
 }
 
-fn walls_to_grid(walls: &Vec<Vec<&Vec<i32>>>, max_x: i32, max_y: i32) -> Vec<Vec<bool>> {
-    let mut grid: Vec<Vec<bool>> = vec![vec![false; (max_x+1) as usize]; (max_y+1) as usize];
-    for wall in walls.iter() {
-        if wall[0][0] == wall[1][0] {
-            // vertical wall
-            let x = wall[0][0];
-            let y_start = min(wall[0][1], wall[1][1]);
-            let y_end = max(wall[0][1], wall[1][1]);
-            for y in y_start..=y_end {
-                grid[y as usize][x as usize] = true;
-            }
-        } else if wall[0][1] == wall[1][1] {
-            // horizontal wall
-            let y = wall[0][1];
-            let x_start = min(wall[0][0], wall[1][0]);
-            let x_end = max(wall[0][0], wall[1][0]);
-            for x in x_start..=x_end {
-                grid[y as usize][x as usize] = true;
-            }
-        } else {
-            println!("non straight wall found: {:?}", wall);
-        }
-    }
-    grid
-}
+// fn walls_to_grid(walls: &Vec<Vec<&Vec<i32>>>, max_x: i32, max_y: i32) -> Vec<Vec<bool>> {
+//     let mut grid: Vec<Vec<bool>> = vec![vec![false; (max_x+1) as usize]; (max_y+1) as usize];
+//     for wall in walls.iter() {
+//         if wall[0][0] == wall[1][0] {
+//             // vertical wall
+//             let x = wall[0][0];
+//             let y_start = min(wall[0][1], wall[1][1]);
+//             let y_end = max(wall[0][1], wall[1][1]);
+//             for y in y_start..=y_end {
+//                 grid[y as usize][x as usize] = true;
+//             }
+//         } else if wall[0][1] == wall[1][1] {
+//             // horizontal wall
+//             let y = wall[0][1];
+//             let x_start = min(wall[0][0], wall[1][0]);
+//             let x_end = max(wall[0][0], wall[1][0]);
+//             for x in x_start..=x_end {
+//                 grid[y as usize][x as usize] = true;
+//             }
+//         } else {
+//             println!("non straight wall found: {:?}", wall);
+//         }
+//     }
+//     grid
+// }
 
-fn pretty_print_walls(walls: &Vec<Vec<&Vec<i32>>>) {
-    // build a grid of these walls for pretty printing/debugging
-    let grid: Vec<Vec<bool>> = walls_to_grid(
-        walls, 
-        walls.iter().map(|x| x[0][0]).max().unwrap_or(0), 
-        walls.iter().map(|x| x[0][1]).max().unwrap_or(0)
-    );
-    pretty_print_grid(&grid);
-}
+// fn pretty_print_walls(walls: &Vec<Vec<&Vec<i32>>>) {
+//     // build a grid of these walls for pretty printing/debugging
+//     let grid: Vec<Vec<bool>> = walls_to_grid(
+//         walls, 
+//         walls.iter().map(|x| x[0][0]).max().unwrap_or(0), 
+//         walls.iter().map(|x| x[0][1]).max().unwrap_or(0)
+//     );
+//     pretty_print_grid(&grid);
+// }
 
 #[cfg(test)]
 mod tests {
@@ -538,7 +502,18 @@ mod tests {
         let (up_walls, across_walls) = split_walls(&walls);
         // convert this full map into T/F for where we're inside
 
-        let expected = walls_to_grid(&walls, 12, 8);
+        // let expected = walls_to_grid(&walls, 12, 8);
+        let expected = vec![
+            vec![false, false, false, false, false, false, false, false, false, false, false, false, false, false, ],
+            vec![false, false, false, false, false, false, false, true , true , true , true , true , false, false, ],
+            vec![false, false, false, false, false, false, false, true , true , true , true , true , false, false, ],
+            vec![false, false, true , true , true , true , true , true , true , true , true , true , false, false, ],
+            vec![false, false, true , true , true , true , true , true , true , true , true , true , false, false, ],
+            vec![false, false, true , true , true , true , true , true , true , true , true , true , false, false, ],
+            vec![false, false, false, false, false, false, false, false, false, true , true , true , false, false, ],
+            vec![false, false, false, false, false, false, false, false, false, true , true , true , false, false, ],
+            vec![false, false, false, false, false, false, false, false, false, false, false, false, false, false, ],
+        ];
         pretty_print_grid(&expected);
         let mut result: Vec<Vec<bool>> = Vec::new();
         for test_y in 0..expected.len() {
@@ -553,34 +528,33 @@ mod tests {
         pretty_print_grid(&result);
         for test_x in 0..expected[0].len() {
             for test_y in 0..expected.len() {
-                let test_point = vec![test_x as i32, test_y as i32];
                 assert_eq!(result[test_y][test_x], expected[test_y][test_x]);
             }
         }
     }
 
-    #[test]
-    fn test_inside_shape_2() {
-        let input = "1,1
-5,1
-5,5
-3,5
-3,3
-1,3";
-        let lines: Vec<&str> = input.lines().collect();
-        let points: Vec<Vec<i32>> = lines.iter()
-            .map(|x| {
-                x.split(",")
-                    .map(|n| n.parse::<i32>().expect("should parse to int"))
-                    .collect()
-            })
-            .collect();
-        let walls = vertices_to_walls(&points);
-        let (up_walls, across_walls) = split_walls(&walls);
-        // convert this full map into T/F for where we're inside
+//     #[test]
+//     fn test_inside_shape_2() {
+//         let input = "1,1
+// 5,1
+// 5,5
+// 3,5
+// 3,3
+// 1,3";
+//         let lines: Vec<&str> = input.lines().collect();
+//         let points: Vec<Vec<i32>> = lines.iter()
+//             .map(|x| {
+//                 x.split(",")
+//                     .map(|n| n.parse::<i32>().expect("should parse to int"))
+//                     .collect()
+//             })
+//             .collect();
+//         let walls = vertices_to_walls(&points);
+//         let (up_walls, across_walls) = split_walls(&walls);
+//         // convert this full map into T/F for where we're inside
 
-        pretty_print_walls(&walls);
-        assert_eq!(true, false);
-    }
+//         pretty_print_walls(&walls);
+//         assert_eq!(true , false);
+//     }
 
 }
