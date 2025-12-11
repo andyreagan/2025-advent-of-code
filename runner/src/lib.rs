@@ -1,0 +1,28 @@
+pub fn jobs() -> &'static [(fn(), &'static str)] {
+    &[
+        (day01a::main, "day 1a"),
+        (day01b::main, "day 1b"),
+        (day02a::main, "day 2a"),
+        (day02b::main, "day 2b"),
+        (day03a::main, "day 3a"),
+        (day03b::main, "day 3b"),
+        (day04a::main, "day 4a"),
+        (day04b::main, "day 4b"),
+        (day05a::main, "day 5a"),
+        (day05b::main, "day 5b"),
+        (day06a::main, "day 6a"),
+        (day06b::main, "day 6b"),
+        (day07a::main, "day 7a"),
+        (day07b::main, "day 7b"),
+        (day08a::main, "day 8a"),
+        (day08b::main, "day 8b"),
+        (day09a::main, "day 9a"),
+        (day09b::main, "day 9b"),
+        // (day10a::main, "day 10a"),
+        // (day10b::main, "day 10b"),
+        // (day11a::main, "day 11a"),
+        // (day11b::main, "day 11b"),
+        // (day12a::main, "day 12a"),
+        // (day12b::main, "day 12b"),
+    ]
+}
